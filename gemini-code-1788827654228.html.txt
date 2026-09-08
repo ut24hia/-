@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ドイツ音名 音楽マスター</title>
+  <style>
+    :root {
+      --primary: #4A90E2;
+      --secondary: #50E3C2;
+      --accent: #FF6B6B;
+      --bg: #1A1D24;
+      --card-bg: #252A34;
+      --text: #EEEEEE;
+      --text-dim: #A0A5B5;
+    }
+
+    * { box-sizing: border-box; font-family: 'Helvetica Neue', Arial, sans-serif; user-select: none; }
+    body { margin: 0; padding: 0; background-color: var(--bg); color: var(--text); display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+
+    /* Navigation */
+    nav { display: flex; background: #12141A; width: 100%; max-width: 600px; justify-content: space-around; padding: 10px 0; border-bottom: 2px solid #333; position: sticky; top: 0; z-index: 100; }
+    nav button { background: none; border: none; color: var(--text-dim); font-size: 15px; font-weight: bold; cursor: pointer; padding: 8px 16px; border-radius: 20px; transition: 0.2s; }
+    nav button.active { background: var(--primary); color: white; }
+
+    /* Main Container */
+    .container { width: 100%; max-width: 600px; padding: 16px; flex: 1; display: flex; flex-direction: column; gap: 16px; }
+    .card { background: var(--card-bg); border-radius: 16px; padding: 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); text-align: center; }
+
+    /* Score Bar */
+    .score-bar { display: flex; justify-content: space-between; background: #181B22; padding: 12px 20px; border-radius: 12px; font-weight: bold; }
+    .point-tag { color: #FFD700; font-size: 18px; }
+
+    /* Buttons */
+    .btn { background: var(--primary); color: white; border: none; padding: 12px 24px; font-size: 16px; font-weight: bold; border-radius: 10px; cursor: pointer; transition: 0.2s; margin: 4px; }
+    .btn:active { transform: scale(0.96); }
+    .btn-accent { background: var(--accent); }
+    .btn-green { background: var(--secondary); color: #111; }
+    .btn-outline { background: transparent; border: 2px solid var(--primary); color: var(--primary); }
+
+    /* Piano Layout */
+    .piano-wrapper { position: relative; width: 100%; height: 160px; margin: 15px 0; background: #111; border-radius: 8px; padding: 5px; box-shadow: inset 0 0 10px #000; display: flex; }
+    .white-keys { display: flex; width: 100%; height: 100%; }
+    .key-white { flex: 1; background: white; border: 1px solid #ccc; border-radius: 0 0 5px 5px; cursor: pointer; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 8px; font-size: 13px; font-weight: bold; color: #333; transition: background 0.1s; }
+    .key-white.active { background: #E0E0E0; }
+    .black-keys { position: absolute; top: 5px; left: 5px; right: 5px; height: 60%; pointer-events: none; display: flex; }
+    .key-black-slot { flex: 1; position: relative; }
+    .key-black { position: absolute; right: -30%; width: 60%; height: 100%; background: #222; border-radius: 0 0 4px 4px; cursor: pointer; pointer-events: auto; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 4px; font-size: 10px; color: white; border: 1px solid #000; box-shadow: 0 3px 5px rgba(0,0,0,0.5); }
+    .key-black.active { background: #555; }
+
+    /* Views */
+    .tab-view { display: none; }
+    .tab-view.active { display: block; }
+
+    /* Gacha System */
+    .gacha-machine { background: linear-gradient(135deg, #FF6B6B, #FF8E53); border-radius: 20px; padding: 30px; margin: 10px 0; color: white; }
+    .gacha-ball { width: 100px; height: 100px; border-radius: 50%; margin: 20px auto; background: white; display: flex; align-items: center; justify-content: center; font-size: 40px; box-shadow: 0 10px 20px rgba(0,0,0,0.3); animation: bounce 1s infinite alternate; }
+    @keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-15px); } }
+
+    /* Sticker Album Canvas */
+    .album-controls { display: flex; gap: 8px; justify-content: center; margin-bottom: 10px; flex-wrap: wrap; }
+    .album-canvas { width: 100%; height: 320px; border: 3px dashed #555; border-radius: 12px; position: relative; overflow: hidden; background: #2A2E39; transition: background 0.3s; }
+    .album-canvas.notebook { background: #FFF9E6; border-color: #D4C59A; }
+    .album-canvas.wood { background: #8B5A2B; border-color: #5C3A1E; }
+
+    .placed-sticker { position: absolute; cursor: move; touch-action: none; display: flex; align-items: center; justify-content: center; font-size: 48px; width: 64px; height: 64px; }
+    .placed-sticker.selected { border: 2px dashed var(--primary); border-radius: 8px; }
+
+    .inventory-tray { display: flex; gap: 10px; overflow-x: auto; padding: 10px; background: #181B22; border-radius: 10px; margin-top: 10px; min-height: 80px; align-items: center; }
+    .inventory-item { font-size: 36px; cursor: pointer; padding: 5px; border-radius: 8px; background: #252A34; flex-shrink: 0; }
+
+    /* Choices Grid */
+    .choices-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 15px; }
+    .choice-btn { background: #323846; color: white; border: 1px solid #444; padding: 15px; font-size: 16px; font-weight: bold; border-radius: 10px; cursor: pointer; }
+    .choice-btn:hover { background: var(--primary); }
+
+    /* Message Area */
+    #msg-area { margin-top: 15px; font-size: 18px; font-weight: bold; min-height: 28px; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <button class="active" onclick="switchTab('quiz')">クイズ 🎵</button>
+  <button onclick="switchTab('gacha')">ガチャ 🎰</button>
+  <button onclick="switchTab('album')">シール帳 🎨</button>
+</nav>
+
+<div class="container">
+  <!-- Points & Status Bar -->
+  <div class="score-bar">
+    <span>レベル: <span id="user-level">1</span></span>
+    <span class="point-tag">🪙 <span id="user-pts">0</span> PT</span>
+  </div>
+
+  <!-- TAB 1: QUIZ -->
+  <div id="tab-quiz" class="tab-view active">
+    <div class="card">
+      <h2 id="mode-title">単音クイズ（基本）</h2>
+      <p id="mode-desc">聴こえた音のドイツ音名を選んでください</p>
+      
+      <div style="margin: 10px 0;">
+        <select id="mode-select" onchange="changeMode(this.value)" style="padding:8px; border-radius:6px; background:#333; color:white; border:none;">
+          <option value="basic">1. 基本単音 (C, D, E, F, G, A, H)</option>
+          <option value="accidental">2. 派生音 (Cis/Des, Dis/Es...)</option>
+          <option value="dur">3. 長和音 (Dur-Akkord)</option>
+          <option value="moll">4. 短和音 (Moll-Akkord)</option>
+          <option value="ear">5. メロディ耳コピ (黒鍵入り)</option>
+        </select>
+      </div>
+
+      <button class="btn btn-green" onclick="playCurrentQuestion()">🔊 音を聴く</button>
+
+      <!-- Accurate Keyboard Visual -->
+      <div class="piano-wrapper">
+        <div class="white-keys" id="white-keys"></div>
+        <div class="black-keys" id="black-keys"></div>
+      </div>
+
+      <div class="choices-grid" id="choices"></div>
+      <div id="msg-area"></div>
+    </div>
+  </div>
+
+  <!-- TAB 2: GACHA -->
+  <div id="tab-gacha" class="tab-view">
+    <div class="card">
+      <h2>シールガチャ 🎰</h2>
+      <p>1回 100 PT でガチャを回せます！</p>
+      <div class="gacha-machine">
+        <div class="gacha-ball" id="gacha-ball">❓</div>
+        <button class="btn btn-accent" onclick="drawGacha()">ガチャを引く！ (100 PT)</button>
+      </div>
+      <div id="gacha-result"></div>
+    </div>
+  </div>
+
+  <!-- TAB 3: STICKER ALBUM -->
+  <div id="tab-album" class="tab-view">
+    <div class="card">
+      <h2>シール帳 🎨</h2>
+      <p>手持ちのシールをタップして台紙に配置し、自由にドラッグ＆アレンジしよう！</p>
+      
+      <div class="album-controls">
+        <button class="btn btn-outline" onclick="setAlbumTheme('cyber')">サイバー 🌌</button>
+        <button class="btn btn-outline" onclick="setAlbumTheme('notebook')">ノート 📝</button>
+        <button class="btn btn-outline" onclick="setAlbumTheme('wood')">ウッド 🪵</button>
+        <button class="btn btn-accent" onclick="removeSelectedSticker()">選択シールをはがす 🗑️</button>
+      </div>
+
+      <div class="album-canvas" id="album-canvas"></div>
+
+      <p style="margin-top:10px; font-size:12px; color:var(--text-dim);">【手持ちシール一覧 (タップで台紙に貼る)】</p>
+      <div class="inventory-tray" id="inventory-tray"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Web Audio Context (Long Sustain Pure Synth)
+  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+  function playFreq(freq, duration = 2.5) {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+
+    // Envelope for longer piano-like sustain
+    gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + duration);
+  }
+
+  // Note Data Definition (Strict German Names)
+  const NOTES = [
+    { name: "C", alt: "ツェー", freq: 261.63, isBlack: false },
+    { name: "Cis / Des", alt: "チス / デス", freq: 277.18, isBlack: true, slot: 0 },
+    { name: "D", alt: "デー", freq: 293.66, isBlack: false },
+    { name: "Dis / Es", alt: "ディス / エス", freq: 311.13, isBlack: true, slot: 1 },
+    { name: "E", alt: "エー", freq: 329.63, isBlack: false },
+    { name: "F", alt: "エフ", freq: 349.23, isBlack: false },
+    { name: "Fis / Ges", alt: "フィス / ゲス", freq: 369.99, isBlack: true, slot: 3 },
+    { name: "G", alt: "ゲー", freq: 392.00, isBlack: false },
+    { name: "Gis / As", alt: "ギス / アス", freq: 415.30, isBlack: true, slot: 4 },
+    { name: "A", alt: "アー", freq: 440.00, isBlack: false },
+    { name: "Ais / B", alt: "アイス / ベー", freq: 466.16, isBlack: true, slot: 5 },
+    { name: "H", alt: "ハー", freq: 493.88, isBlack: false }
+  ];
+
+  // Sticker Database
+  const STICKERS = [
+    { id: 's1', icon: '🎸', name: 'エレキギター' },
+    { id: 's2', icon: '🎹', name: 'グランドピアノ' },
+    { id: 's3', icon: '🎷', name: 'サックス' },
+    { id: 's4', icon: '🎺', name: 'トランペット' },
+    { id: 's5', icon: '🎻', name: 'バイオリン' },
+    { id: 's6', icon: '🥁', name: 'ドラム' },
+    { id: 's7', icon: '🎧', name: 'ヘッドフォン' },
+    { id: 's8', icon: '👑', name: '王冠' },
+    { id: 's9', icon: '🌟', name: 'スター' },
+    { id: 's10', icon: '🚀', name: 'ロケット' }
+  ];
+
+  // User State & Storage
+  let state = {
+    pts: 100,
+    level: 1,
+    inventory: ['s1', 's2'],
+    placedStickers: [],
+    mode: 'basic'
+  };
+
+  function loadState() {
+    const saved = localStorage.getItem('de_music_app_state');
+    if (saved) {
+      try { state = JSON.parse(saved); } catch(e){}
+    }
+    updateUI();
+  }
+
+  function saveState() {
+    localStorage.setItem('de_music_app_state', JSON.stringify(state));
+    updateUI();
+  }
+
+  function updateUI() {
+    document.getElementById('user-pts').textContent = state.pts;
+    document.getElementById('user-level').textContent = state.level;
+    renderInventory();
+    renderPlacedStickers();
+  }
+
+  // Keyboard Generator
+  function renderKeyboard() {
+    const whiteContainer = document.getElementById('white-keys');
+    const blackContainer = document.getElementById('black-keys');
+    whiteContainer.innerHTML = '';
+    blackContainer.innerHTML = '';
+
+    NOTES.forEach((note) => {
+      if (!note.isBlack) {
+        const key = document.createElement('div');
+        key.className = 'key-white';
+        key.textContent = note.name;
+        key.onclick = () => playFreq(note.freq);
+        whiteContainer.appendChild(key);
+
+        const slot = document.createElement('div');
+        slot.className = 'key-black-slot';
+        blackContainer.appendChild(slot);
+      } else {
+        const lastSlot = blackContainer.lastElementChild;
+        if (lastSlot) {
+          const bkey = document.createElement('div');
+          bkey.className = 'key-black';
+          bkey.textContent = note.name.split(' ')[0];
+          bkey.onclick = (e) => { e.stopPropagation(); playFreq(note.freq); };
+          lastSlot.appendChild(bkey);
+        }
+      }
+    });
+  }
+
+  // Navigation Logic
+  function switchTab(tabName) {
+    document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-view').forEach(v => v.classList.remove('active'));
+    event.target.classList.add('active');
+    document.getElementById(`tab-${tabName}`).classList.add('active');
+  }
+
+  // Quiz Engine
+  let currentTarget = null;
+
+  function changeMode(mode) {
+    state.mode = mode;
+    nextQuestion();
+  }
+
+  function nextQuestion() {
+    const msg = document.getElementById('msg-area');
+    msg.textContent = '';
+    const choices = document.getElementById('choices');
+    choices.innerHTML = '';
+
+    if (state.mode === 'basic') {
+      const filtered = NOTES.filter(n => !n.isBlack);
+      currentTarget = filtered[Math.floor(Math.random() * filtered.length)];
+      filtered.forEach(n => createChoiceButton(n.name, n.name));
+    } else if (state.mode === 'accidental') {
+      const filtered = NOTES.filter(n => n.isBlack);
+      currentTarget = filtered[Math.floor(Math.random() * filtered.length)];
+      filtered.forEach(n => createChoiceButton(n.name, n.name));
+    } else if (state.mode === 'dur') {
+      const chords = [
+        { name: "C-dur (ハ長調)", freqs: [261.63, 329.63, 392.00] },
+        { name: "G-dur (ト長調)", freqs: [392.00, 493.88, 293.66] },
+        { name: "F-dur (ヘ長調)", freqs: [349.23, 440.00, 261.63] }
+      ];
+      currentTarget = chords[Math.floor(Math.random() * chords.length)];
+      chords.forEach(c => createChoiceButton(c.name, c.name));
+    } else if (state.mode === 'moll') {
+      const chords = [
+        { name: "a-moll (イ短調)", freqs: [220.00, 261.63, 329.63] },
+        { name: "e-moll (ホ短調)", freqs: [329.63, 392.00, 493.88] },
+        { name: "d-moll (ニ短調)", freqs: [293.66, 349.23, 440.00] }
+      ];
+      currentTarget = chords[Math.floor(Math.random() * chords.length)];
+      chords.forEach(c => createChoiceButton(c.name, c.name));
+    } else if (state.mode === 'ear') {
+      // Melody ear training with black keys
+      const seq = [
+        NOTES[0], // C
+        NOTES[1], // Cis / Des
+        NOTES[4]  // E
+      ];
+      currentTarget = { name: "C - Cis - E", sequence: seq };
+      createChoiceButton("C - Cis - E", "C - Cis - E");
+      createChoiceButton("C - D - E", "C - D - E");
+      createChoiceButton("D - Dis - F", "D - Dis - F");
+    }
+
+    playCurrentQuestion();
+  }
+
+  function createChoiceButton(label, val) {
+    const btn = document.createElement('button');
+    btn.className = 'choice-btn';
+    btn.textContent = label;
+    btn.onclick = () => checkAnswer(val);
+    document.getElementById('choices').appendChild(btn);
+  }
+
+  function playCurrentQuestion() {
+    if (!currentTarget) return;
+    if (currentTarget.freq) {
+      playFreq(currentTarget.freq, 2.5);
+    } else if (currentTarget.freqs) {
+      currentTarget.freqs.forEach(f => playFreq(f, 2.8));
+    } else if (currentTarget.sequence) {
+      currentTarget.sequence.forEach((note, idx) => {
+        setTimeout(() => playFreq(note.freq, 1.5), idx * 600);
+      });
+    }
+  }
+
+  function checkAnswer(val) {
+    const msg = document.getElementById('msg-area');
+    if (val === currentTarget.name) {
+      msg.style.color = "#50E3C2";
+      msg.textContent = "🎉 正解です！ (+20 PT)";
+      state.pts += 20;
+      saveState();
+      setTimeout(nextQuestion, 1500);
+    } else {
+      msg.style.color = "#FF6B6B";
+      msg.textContent = "❌ 残念！もう一度聴いてみましょう。";
+    }
+  }
+
+  // Gacha System
+  function drawGacha() {
+    if (state.pts < 100) {
+      alert("ポイントが足りません！クイズを解いてPTを貯めましょう。");
+      return;
+    }
+    state.pts -= 100;
+    const picked = STICKERS[Math.floor(Math.random() * STICKERS.length)];
+    state.inventory.push(picked.id);
+    saveState();
+
+    document.getElementById('gacha-ball').textContent = picked.icon;
+    document.getElementById('gacha-result').innerHTML = `<h3>【${picked.name}】を獲得！</h3>`;
+  }
+
+  // Sticker Canvas & Dragging Logic
+  let selectedStickerIndex = null;
+
+  function renderInventory() {
+    const tray = document.getElementById('inventory-tray');
+    tray.innerHTML = '';
+    state.inventory.forEach((stId) => {
+      const st = STICKERS.find(s => s.id === stId);
+      if (!st) return;
+      const el = document.createElement('div');
+      el.className = 'inventory-item';
+      el.textContent = st.icon;
+      el.onclick = () => placeStickerOnCanvas(st);
+      tray.appendChild(el);
+    });
+  }
+
+  function placeStickerOnCanvas(stickerObj) {
+    state.placedStickers.push({
+      icon: stickerObj.icon,
+      x: 50,
+      y: 50
+    });
+    saveState();
+  }
+
+  function renderPlacedStickers() {
+    const canvas = document.getElementById('album-canvas');
+    canvas.querySelectorAll('.placed-sticker').forEach(e => e.remove());
+
+    state.placedStickers.forEach((st, idx) => {
+      const el = document.createElement('div');
+      el.className = `placed-sticker ${selectedStickerIndex === idx ? 'selected' : ''}`;
+      el.textContent = st.icon;
+      el.style.left = `${st.x}px`;
+      el.style.top = `${st.y}px`;
+
+      // Touch / Mouse Dragging
+      let isDragging = false;
+      let startX, startY;
+
+      const startMove = (clientX, clientY) => {
+        isDragging = true;
+        selectedStickerIndex = idx;
+        startX = clientX - st.x;
+        startY = clientY - st.y;
+        renderPlacedStickers();
+      };
+
+      const doMove = (clientX, clientY) => {
+        if (!isDragging) return;
+        st.x = clientX - startX;
+        st.y = clientY - startY;
+        el.style.left = `${st.x}px`;
+        el.style.top = `${st.y}px`;
+      };
+
+      const endMove = () => {
+        if (isDragging) {
+          isDragging = false;
+          saveState();
+        }
+      };
+
+      el.addEventListener('mousedown', (e) => startMove(e.clientX, e.clientY));
+      window.addEventListener('mousemove', (e) => doMove(e.clientX, e.clientY));
+      window.addEventListener('mouseup', endMove);
+
+      el.addEventListener('touchstart', (e) => startMove(e.touches[0].clientX, e.touches[0].clientY));
+      window.addEventListener('touchmove', (e) => doMove(e.touches[0].clientX, e.touches[0].clientY));
+      window.addEventListener('touchend', endMove);
+
+      canvas.appendChild(el);
+    });
+  }
+
+  function removeSelectedSticker() {
+    if (selectedStickerIndex !== null) {
+      state.placedStickers.splice(selectedStickerIndex, 1);
+      selectedStickerIndex = null;
+      saveState();
+    }
+  }
+
+  function setAlbumTheme(theme) {
+    const canvas = document.getElementById('album-canvas');
+    canvas.className = `album-canvas ${theme}`;
+  }
+
+  // Init
+  window.onload = () => {
+    renderKeyboard();
+    loadState();
+    nextQuestion();
+  };
+</script>
+</body>
+</html>
